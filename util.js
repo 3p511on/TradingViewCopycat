@@ -18,4 +18,13 @@ const checkCycleRightness = (client, symbol, posAmount, debug, _debugInfo) => {
   return false;
 };
 
-module.exports = { getPositionSide, checkCycleRightness };
+const parsePercent = (percent) => {
+  if (typeof percent === 'string') {
+    if (percent.endsWith('%')) percent = percent.slice(0, -1);
+    percent = +percent;
+  }
+  if (percent < 1) return percent;
+  return percent / 100;
+};
+
+module.exports = { getPositionSide, checkCycleRightness, parsePercent };

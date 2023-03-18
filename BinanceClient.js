@@ -6,7 +6,7 @@ const { stringify } = require('node:querystring');
 const debug = require('debug')('BinanceClient');
 const { fetch } = require('undici');
 const BinanceError = require('./BinanceError');
-const { getPositionSide } = require('./util');
+const { getPositionSide, parsePercent } = require('./util');
 
 const { TP_PERCENTS } = process.env;
 const tpPercents = TP_PERCENTS.split(',');
@@ -150,15 +150,6 @@ module.exports = class BinanceClient extends EventEmitter {
     return assets.find((a) => symbol.endsWith(a));
   }
 
-  parsePercent(percent) {
-    if (typeof percent === 'string') {
-      if (percent.endsWith('%')) percent = percent.slice(0, -1);
-      percent = +percent;
-    }
-    if (percent < 1) return percent;
-    return percent / 100;
-  }
-
   async getBookTicker(symbol) {
     const body = { symbol };
     const res = await this.request('fapi/v1/ticker/bookTicker', { body });
@@ -177,7 +168,7 @@ module.exports = class BinanceClient extends EventEmitter {
     const asset = this.getSymbolAsset(symbol);
     const balance = await this.getBalance(asset);
     const price = await this.getMarkPrice(symbol);
-    return (balance * this.parsePercent(percent) * leverage) / price;
+    return (balance * parsePercent(percent) * leverage) / price;
   }
 
   async getPositions(symbol) {
@@ -195,7 +186,7 @@ module.exports = class BinanceClient extends EventEmitter {
     const positionHistory = this.positionsHistory[symbol];
     if (!positionHistory) throw new Error('No position history');
     const initialPart = positionHistory[0];
-    return initialPart * this.parsePercent(percent);
+    return initialPart * parsePercent(percent);
   }
 
   pushPositionHistory(symbol, amount) {
@@ -214,7 +205,7 @@ module.exports = class BinanceClient extends EventEmitter {
     const price = await this.getMarkPrice(symbol);
     let orderDirection = side === 'SELL' ? 1 : -1;
     if (!isStopLoss) orderDirection *= -1;
-    const piece = price * this.parsePercent(percent) * orderDirection;
+    const piece = price * parsePercent(percent) * orderDirection;
     return price + piece;
   }
 

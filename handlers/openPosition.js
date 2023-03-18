@@ -1,7 +1,7 @@
 'use strict';
 
 const debug = require('debug')('OpenPositionEvent');
-const { checkCycleRightness } = require('../util');
+const { parsePercent } = require('../util');
 
 const { POSITION_OPEN_PERCENT, POSITION_OPEN_TYPE, POSITION_OPEN_VALUES, SL_POSITION_OPEN, TP_POSITION_OPEN } =
   process.env;
@@ -93,14 +93,14 @@ module.exports = async (client, symbol, side) => {
     await client.cancelPrevious(symbol, 'TAKE_PROFIT_MARKET');
 
     // Нужно ли ставить стоп лосс? (Он будет 0 - если нет)
-    const shouldSetSL = client.parsePercent(SL_POSITION_OPEN);
+    const shouldSetSL = parsePercent(SL_POSITION_OPEN);
     if (shouldSetSL) {
       const stopPrice = await client.calculatePercent(true, symbol, side, SL_POSITION_OPEN);
       const stopLossSide = side === 'BUY' ? 'SELL' : 'BUY';
       await client.setTPSL(symbol, positionSide, 'STOP_MARKET', stopLossSide, stopPrice);
     }
 
-    const shouldSetTP = client.parsePercent(TP_POSITION_OPEN);
+    const shouldSetTP = parsePercent(TP_POSITION_OPEN);
     if (shouldSetTP) {
       const tpPrice = await client.calculatePercent(false, symbol, side, TP_POSITION_OPEN);
       const tpSide = side === 'BUY' ? 'SELL' : 'BUY';
