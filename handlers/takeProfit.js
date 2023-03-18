@@ -1,7 +1,7 @@
 'use strict';
 
 const debug = require('debug')('TakeProfitEvent');
-const { checkCycleRightness } = require('../util');
+const { checkCycleRightness, parsePercent } = require('../util');
 
 const { TP_PERCENTS, SL_AFTER_TP, TP_AFTER_TP } = process.env;
 const tpPercents = TP_PERCENTS.split(',');
@@ -66,7 +66,7 @@ module.exports = async (client, symbol, side) => {
     } else {
       // Иначе забрать от изначальной позиции еще часть
       const currentTpIndex = client.cycle[symbol].length;
-      const percent = client.parsePercent(tpPercents[currentTpIndex - 1]);
+      const percent = parsePercent(tpPercents[currentTpIndex - 1]);
       quantity = client.getPartOfPosition(symbol, percent);
     }
 
@@ -80,14 +80,14 @@ module.exports = async (client, symbol, side) => {
     await client.cancelPrevious(symbol, 'TAKE_PROFIT_MARKET');
 
     // Нужно ли ставить стоп лосс? (Он будет 0 - если нет)
-    const shouldSetSL = client.parsePercent(SL_AFTER_TP);
+    const shouldSetSL = parsePercent(SL_AFTER_TP);
     if (shouldSetSL) {
       const stopPrice = await client.calculatePercent(true, symbol, side, SL_AFTER_TP);
       const stopLossSide = side === 'BUY' ? 'SELL' : 'BUY';
       await client.setTPSL(symbol, positionSide, 'STOP_MARKET', stopLossSide, stopPrice);
     }
 
-    const shouldSetTP = client.parsePercent(TP_AFTER_TP);
+    const shouldSetTP = parsePercent(TP_AFTER_TP);
     if (shouldSetTP) {
       const tpPrice = await client.calculatePercent(false, symbol, side, TP_AFTER_TP);
       const tpSide = side === 'BUY' ? 'SELL' : 'BUY';
