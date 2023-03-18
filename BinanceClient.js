@@ -51,13 +51,12 @@ module.exports = class BinanceClient extends EventEmitter {
     this.afterLoad();
   }
 
-  request(path, opts = {}) {
+  request(apiPath, opts = {}) {
     opts = { ...defaultRequestOptions, ...opts };
     const { body, method, headers } = opts;
     const params = stringify({ ...body, timestamp: Date.now() });
     const signature = encryptMessage(this.secret, params);
-    debug('Request signature', signature);
-    const uri = `${this.restApiUri}/${path}?${params}&signature=${signature}`;
+    const uri = `${this.restApiUri}/${apiPath}?${params}&signature=${signature}`;
     debug('Request uri', uri);
     Object.assign(headers, { 'X-MBX-APIKEY': this.key });
     return fetch(uri, { method, headers });
@@ -65,8 +64,8 @@ module.exports = class BinanceClient extends EventEmitter {
 
   async fetchExchangeInfo() {
     try {
-      const path = 'fapi/v1/exchangeInfo';
-      const res = await fetch(`${this.restApiUri}/${path}`);
+      const apiPath = 'fapi/v1/exchangeInfo';
+      const res = await fetch(`${this.restApiUri}/${apiPath}`);
       const json = await res.json();
       this.exchangeInfo = json;
       return json;
@@ -95,12 +94,12 @@ module.exports = class BinanceClient extends EventEmitter {
   async createOrder({ symbol, side, type, quantity, stopPrice, positionSide, closePosition }) {
     if (!this.exchangeInfo) throw new Error('Exchange info was not fetched');
     try {
-      const path = 'fapi/v1/order';
+      const apiPath = 'fapi/v1/order';
       const body = { symbol, side, type, positionSide };
       if (stopPrice) Object.assign(body, { stopPrice });
       if (closePosition) Object.assign(body, { closePosition });
       if (quantity) Object.assign(body, { quantity });
-      const res = await this.request(path, { body, method: 'POST' });
+      const res = await this.request(apiPath, { body, method: 'POST' });
       const json = await res.json();
       if (json?.code) throw new BinanceError('Request error', json);
       return json;
