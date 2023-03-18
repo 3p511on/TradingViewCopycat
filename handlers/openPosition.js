@@ -3,7 +3,11 @@
 const debug = require('debug')('OpenPositionEvent');
 const { parsePercent } = require('../util');
 
-const { POSITION_OPEN_PERCENT, POSITION_OPEN_VALUES, SL_POSITION_OPEN, TP_POSITION_OPEN } = process.env;
+const { POSITION_OPEN_PERCENT, POSITION_OPEN_VALUES, SL_POSITION_OPEN, TP_POSITION_OPEN, LIMIT_ORDERS } = process.env;
+
+const limitPercents = LIMIT_ORDERS.split(', ')
+  .map((s) => s.split(':').map((e) => parsePercent(e)))
+  .sort((a, b) => +b[0] - +a[0]);
 
 const PositionSide = {
   SELL: 'SHORT',
@@ -82,6 +86,30 @@ module.exports = async (client, symbol, side) => {
     client.clearPositionHistory(symbol);
     client.pushPositionHistory(symbol, quantity);
     client.cycle[symbol] = [side];
+
+    // Set limit orders
+    const markPrice = await client.getMarkPrice(symbol);
+    const direction = side === 'BUY' ? 1 : -1;
+    const limitOrders = limitPercents.map(([pPercent, qPercent]) => [
+      Math.abs((direction + pPercent) * markPrice),
+      quantity * qPercent,
+    ]);
+    let q = quantity;
+    for await (let [i, [price, qty]] of Object.entries(limitOrders)) {
+      if (i === limitOrders.length - 1) qty = q;
+      const oppositeSide = side === 'BUY' ? 'SELL' : 'BUY';
+      await client.createOrder({
+        symbol,
+        positionSide,
+        side: oppositeSide,
+        type: 'LIMIT',
+        quantity: client.normalizeQty(symbol, qty),
+        price: client.normalizePrice(symbol, price),
+        timeInForce: 'GTC',
+      });
+      console.log(`Created LIMIT order for ${symbol} | Price: ${price} | Qty: ${qty}`);
+      q -= qty;
+    }
 
     // Удалить прошлый стоп лосс
     await client.cancelPrevious(symbol, 'STOP_MARKET');
