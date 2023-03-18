@@ -171,7 +171,8 @@ module.exports = class BinanceClient extends EventEmitter {
     const body = { symbol };
     const res = await this.request('fapi/v2/positionRisk', { body });
     const positions = await res.json();
-    return positions;
+    const openedPositions = positions.filter((p) => +p.positionAmt);
+    return symbol ? positions : openedPositions;
   }
 
   getPositionAmounts(positions) {
