@@ -63,7 +63,7 @@ client.afterLoad = async () => {
   client.on('openPosition', openPosition);
   client.on('takeProfit', takeProfit);
   client.on('roe', roeHandler);
-  testBehaviour();
+  // TestBehaviour();
 };
 
 module.exports = client;
