@@ -121,6 +121,13 @@ module.exports = class BinanceClient extends EventEmitter {
     return fixedQuantity;
   }
 
+  normalizePrice(symbol, price) {
+    if (typeof price === 'string') price = +price;
+    const { pricePrecision } = this.getPrecisions(symbol);
+    const fixedPrice = price.toFixed(pricePrecision);
+    return fixedPrice;
+  }
+
   openPosition(positionSide, side, symbol, quantity) {
     const fixedQuantity = this.normalizeQty(symbol, quantity);
     const body = { positionSide, symbol, side, type: 'MARKET', quantity: fixedQuantity };
