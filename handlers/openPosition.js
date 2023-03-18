@@ -3,8 +3,7 @@
 const debug = require('debug')('OpenPositionEvent');
 const { parsePercent } = require('../util');
 
-const { POSITION_OPEN_PERCENT, POSITION_OPEN_TYPE, POSITION_OPEN_VALUES, SL_POSITION_OPEN, TP_POSITION_OPEN } =
-  process.env;
+const { POSITION_OPEN_PERCENT, POSITION_OPEN_VALUES, SL_POSITION_OPEN, TP_POSITION_OPEN } = process.env;
 
 const PositionSide = {
   SELL: 'SHORT',
@@ -16,9 +15,7 @@ const getPositionValue = async (client, symbol) => {
   const symbolValue = +symbols[symbol];
   if (isNaN(symbolValue)) return null;
   const markPrice = await client.getMarkPrice(symbol);
-  console.log('Markprice', markPrice);
   const quantity = symbolValue / markPrice;
-  console.log(quantity);
   return quantity;
 };
 
@@ -41,7 +38,6 @@ module.exports = async (client, symbol, side) => {
     const activePositions = currentPositionAmounts.filter(([, posAmount]) => posAmount !== 0);
 
     if (activePositions.length > 1) {
-      console.log('Active positions', activePositions);
       for (const position of activePositions) {
         await client.closePosition(symbol, position[0]);
       }
@@ -81,7 +77,6 @@ module.exports = async (client, symbol, side) => {
     // Открытие позиции и запомнить это
     const leverage = currentPositions[0].leverage;
     const quantity = await getQuantity(client, symbol, leverage);
-    console.log('Quantity:', quantity);
     const positionSide = side === 'BUY' ? 'LONG' : 'SHORT';
     await client.openPosition(positionSide, side, symbol, quantity);
     client.clearPositionHistory(symbol);
