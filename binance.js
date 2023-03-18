@@ -5,6 +5,7 @@ require('./loadEnv')();
 const d = require('debug');
 const BinanceClient = require('./BinanceClient');
 const openPosition = require('./handlers/openPosition');
+const roeHandler = require('./handlers/roe');
 const takeProfit = require('./handlers/takeProfit');
 
 const leveragesDebug = d('Leverages');
@@ -28,29 +29,41 @@ const setLeverages = async () => {
 
 const sleep = async (ms) => new Promise((res) => setTimeout(res, ms));
 
-client.afterLoad = async () => {
-  await setLeverages();
-  client.on('openPosition', openPosition);
-  client.on('takeProfit', takeProfit);
-  // Console.log('OPEN');
+const testBehaviour = async () => {
   client.emit('openPosition', client, 'ETHUSDT', 'BUY');
   await sleep(2000);
-  client.emit('openPosition', client, 'ATOMUSDT', 'BUY');
+  client.emit('openPosition', client, 'ATOMUSDT', 'SELL');
 
-  await sleep(5000);
+  await sleep(20000);
 
   console.log('TP');
   client.emit('takeProfit', client, 'ETHUSDT', 'BUY');
-  await sleep(5000);
+  await sleep(20000);
 
   console.log('2 TP');
   client.emit('takeProfit', client, 'ETHUSDT', 'BUY');
-  await sleep(5000);
+  await sleep(20000);
 
   client.emit('takeProfit', client, 'ETHUSDT', 'BUY');
   await sleep(5000);
 
-  // Client.emit('takeProfit', client, 'ATOMUSDT', 'BUY');
+  client.emit('takeProfit', client, 'ATOMUSDT', 'SELL');
+  await sleep(5000);
+
+  client.emit('openPosition', client, 'ETHUSDT', 'SELL');
+};
+
+client.afterLoad = async () => {
+  await setLeverages();
+  setInterval(async () => {
+    const roes = await client.getRoes();
+    for (const position of roes) client.emit('roe', client, position);
+  }, 10 * 1000);
+
+  client.on('openPosition', openPosition);
+  client.on('takeProfit', takeProfit);
+  client.on('roe', roeHandler);
+  testBehaviour();
 };
 
 module.exports = client;

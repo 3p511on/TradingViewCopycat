@@ -29,6 +29,7 @@ module.exports = class BinanceClient extends EventEmitter {
     this.cycle = {
       // ETHUSDT: ['BUY'],
     };
+    this.slHistory = {};
     this.init();
   }
 
@@ -248,5 +249,17 @@ module.exports = class BinanceClient extends EventEmitter {
     const position = amounts.find(([pSide]) => pSide === positionSide);
     const side = getPositionSide(position[1]) === 'BUY' ? 'SELL' : 'BUY';
     return this.openPosition(positionSide, side, symbol, Math.abs(position[1]));
+  }
+
+  calculateRoe({ positionSide, entryPrice, markPrice, leverage }) {
+    const side = positionSide === 'LONG' ? 1 : -1;
+    // !! Место изменения базы с Mark Price на Last Price
+    const roe = (side * +leverage * (+markPrice - +entryPrice)) / +markPrice;
+    return roe;
+  }
+
+  async getRoes(positions = null) {
+    positions = await (positions ?? (await this.getPositions()));
+    return positions.map((p) => ({ ...p, roe: this.calculateRoe(p) }));
   }
 };
