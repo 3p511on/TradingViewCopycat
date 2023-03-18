@@ -63,6 +63,8 @@ module.exports = async (client, symbol, side) => {
     const isLastExpectedTP = client.cycle[symbol].length + 1 === client.fullCycleSize;
     if (isLastExpectedTP) {
       quantity = Math.abs(currentPosition[1]);
+      await client.cancelPrevious(symbol, 'STOP_MARKET');
+      await client.cancelPrevious(symbol, 'TAKE_PROFIT_MARKET');
     } else {
       // Иначе забрать от изначальной позиции еще часть
       const currentTpIndex = client.cycle[symbol].length;
@@ -76,24 +78,25 @@ module.exports = async (client, symbol, side) => {
     client.cycle[symbol].push('TP');
 
     // Удалить прошлый стоп лосс
-    await client.cancelPrevious(symbol, 'STOP_MARKET');
-    await client.cancelPrevious(symbol, 'TAKE_PROFIT_MARKET');
 
-    // Нужно ли ставить стоп лосс? (Он будет 0 - если нет)
-    const shouldSetSL = parsePercent(SL_AFTER_TP);
-    if (shouldSetSL) {
-      const stopPrice = await client.calculatePercent(true, symbol, side, SL_AFTER_TP);
-      const stopLossSide = side === 'BUY' ? 'SELL' : 'BUY';
-      await client.setTPSL(symbol, positionSide, 'STOP_MARKET', stopLossSide, stopPrice);
+    if (!isLastExpectedTP) {
+      // Нужно ли ставить стоп лосс? (Он будет 0 - если нет)
+      const shouldSetSL = parsePercent(SL_AFTER_TP);
+      if (shouldSetSL) {
+        await client.cancelPrevious(symbol, 'STOP_MARKET');
+        const stopPrice = await client.calculatePercent(true, symbol, side, SL_AFTER_TP);
+        const stopLossSide = side === 'BUY' ? 'SELL' : 'BUY';
+        await client.setTPSL(symbol, positionSide, 'STOP_MARKET', stopLossSide, stopPrice);
+      }
+
+      const shouldSetTP = parsePercent(TP_AFTER_TP);
+      if (shouldSetTP) {
+        await client.cancelPrevious(symbol, 'TAKE_PROFIT_MARKET');
+        const tpPrice = await client.calculatePercent(false, symbol, side, TP_AFTER_TP);
+        const tpSide = side === 'BUY' ? 'SELL' : 'BUY';
+        await client.setTPSL(symbol, positionSide, 'TAKE_PROFIT_MARKET', tpSide, tpPrice);
+      }
     }
-
-    const shouldSetTP = parsePercent(TP_AFTER_TP);
-    if (shouldSetTP) {
-      const tpPrice = await client.calculatePercent(false, symbol, side, TP_AFTER_TP);
-      const tpSide = side === 'BUY' ? 'SELL' : 'BUY';
-      await client.setTPSL(symbol, positionSide, 'TAKE_PROFIT_MARKET', tpSide, tpPrice);
-    }
-
     return true;
   } catch (err) {
     console.error(err);
