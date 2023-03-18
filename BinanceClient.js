@@ -116,6 +116,7 @@ module.exports = class BinanceClient extends EventEmitter {
   }
 
   normalizeQty(symbol, qty) {
+    if (typeof qty === 'string') qty = +qty;
     const { quantityPrecision } = this.getPrecisions(symbol);
     const fixedQuantity = qty.toFixed(quantityPrecision);
     return fixedQuantity;
