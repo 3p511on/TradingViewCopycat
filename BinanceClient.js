@@ -91,7 +91,7 @@ module.exports = class BinanceClient extends EventEmitter {
     return symbolInfo;
   }
 
-  async createOrder({ symbol, side, type, quantity, stopPrice, positionSide, closePosition }) {
+  async createOrder({ symbol, side, type, quantity, stopPrice, positionSide, closePosition, price, timeInForce }) {
     if (!this.exchangeInfo) throw new Error('Exchange info was not fetched');
     try {
       const apiPath = 'fapi/v1/order';
@@ -99,6 +99,9 @@ module.exports = class BinanceClient extends EventEmitter {
       if (stopPrice) Object.assign(body, { stopPrice });
       if (closePosition) Object.assign(body, { closePosition });
       if (quantity) Object.assign(body, { quantity });
+      if (price) Object.assign(body, { price: this.normalizePrice(symbol, price) });
+      if (timeInForce) Object.assign(body, { timeInForce });
+
       const res = await this.request(apiPath, { body, method: 'POST' });
       const json = await res.json();
       if (json?.code) throw new BinanceError('Request error', json);
