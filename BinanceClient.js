@@ -23,12 +23,8 @@ module.exports = class BinanceClient extends EventEmitter {
     this.isTestnet = isTestnet;
     this.fullCycleSize = fullCycleSize;
     this.afterLoad = () => undefined;
-    this.positionsHistory = {
-      // ETHUSDT: [3],
-    };
-    this.cycle = {
-      // ETHUSDT: ['BUY'],
-    };
+    this.positionsHistory = {};
+    this.cycle = {};
     this.slHistory = {};
     this.init();
   }
