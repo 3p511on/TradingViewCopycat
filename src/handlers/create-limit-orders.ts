@@ -13,7 +13,6 @@ export default async (ctx: EventContext, _symbol: string, side: 'BUY' | 'SELL', 
     const slTpTasks: TasksTPSL[] = [[config.stopLoss.onPositionOpen, true, 'entry', entryPrice], [config.takeProfit.onPositionOpen, false, 'entry', entryPrice]]
     const position = ctx.positions?.find(p => p.side === side)
     if (!position) throw new UnexpectedBehaviourError('NO_POSITION', ctx)
-    console.log(position)
     await retryAsync(() => setTPSL(ctx, position, slTpTasks), 15, 1000)
 
   } catch (err) {

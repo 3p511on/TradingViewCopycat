@@ -71,7 +71,6 @@ export default async (ctx: EventContext, symbol: string, side: 'BUY' | 'SELL', t
 
       // Если есть tickPrice и в настройках указан процент для отклонения
       // создаем лимит ордер на создание позиции по цене
-      console.log('tickPrice', tickPrice, 'limitOrderPricePercent', limitOrderPricePercent)
       if (tickPrice && limitOrderPricePercent) {
         const positionSide: 'LONG' | 'SHORT' = side === 'BUY' ? 'LONG' : 'SHORT'
         const orderPrice: number = positionSide === 'LONG' ? tickPrice - tickPrice * limitOrderPricePercent : tickPrice + tickPrice * limitOrderPricePercent
